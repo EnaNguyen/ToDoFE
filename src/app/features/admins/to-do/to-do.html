@@ -1,0 +1,24 @@
+<button
+  command="show-modal"
+  commandfor="createModal"
+  class="rounded-md bg-gray-950/5 px-2.5 py-1.5 text-sm font-semibold text-gray-900 hover:bg-gray-950/10"
+>
+  Create A To-Do
+</button>
+<create-to-do-modal />
+<list-to-do 
+   [toDoItems]="(todos$| async) || []"
+   [isLoading]="(loading$ | async) ?? false"
+></list-to-do>
+<input
+  #searchInput
+  type="text"
+  placeholder="Enter title / description"
+/>
+<select #statusToDo>
+  <option value="0">All</option>
+  <option value="1">Done</option>
+  <option value="-1">UnDone</option>
+</select>
+<input #minDateInput type="date"/>
+<input #maxDateInput type="date"/>
