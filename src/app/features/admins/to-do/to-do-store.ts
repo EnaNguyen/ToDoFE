@@ -87,11 +87,11 @@ export class TodoStore extends ComponentStore<TodoState> {
       error: null,
     };
   });
-  readonly setError = this.updater((state, error: string) => ({
-    ...state,
-    isLoading: false,
-    error,
-  }));
+    readonly setError = this.updater((state, error: string) => ({
+      ...state,
+      isLoading: false,
+      error,
+    }));
   readonly searchToDo = this.updater((state, queue: string) => {
     const lowerQueue = queue.toLowerCase().trim();
     return {

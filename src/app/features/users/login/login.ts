@@ -10,6 +10,8 @@ import {
 import { ppid } from 'process';
 import { LoginStore } from './login.store';
 import { LoginOTPModal } from './login-otp.modal';
+import { AuthServices } from '../../../services/AuthServices';
+import { Router } from '@angular/router';
 export interface LoginRequest {
   username: string;
   password: string;
@@ -40,19 +42,41 @@ export interface LoginRequest {
         <button type="submit" class="h-20">Login</button>
       </div>
     </form>
-    <!-- <otp-verify-modal [userId]="userId" /> -->
+    <otp-verify-modal [userId]="userId" [show]="showModal" />
   </div>`,
   styleUrl: './login.scss',
 })
 export class Login {
   loginForm!: FormGroup;
   userId: number|null=null;
+  showModal: boolean = false;
   private readonly loginStore = inject(LoginStore);
+  private readonly authService = inject(AuthServices);
+  private readonly router = inject(Router);
   constructor(private fb: FormBuilder) {
     this.loginForm = this.fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required],
     });
+    // if (this.authService.isLogginedIn()) {
+    //   console.log('Already logged in (from storage) → redirect immediately');
+    //   this.router.navigate(['/'], { replaceUrl: true });
+    // }
+  }
+  ngOnInit() {
+  this.loginStore.user$.subscribe((userInfo) => { 
+    this.userId = userInfo?.userId ?? null;
+  });
+
+  this.loginStore.showOTPModal$.subscribe((show) => {
+    this.showModal = show;
+  });
+  // this.authService.currentUser$.subscribe((user) => {
+  //   if (user) {
+  //     console.log('User already logged in → redirecting');
+  //     this.router.navigate(['/'] , {replaceUrl: true});  
+  //   }
+  // });
   }
   onSubmit(): void {
     const newLoginRequest: LoginRequest = {

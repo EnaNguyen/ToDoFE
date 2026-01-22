@@ -9,6 +9,6 @@ export interface loginRequest{
   password: string;
 }
 export interface verifyOTP{
-  userId: string;
-  password: string;
+  userId: number;
+  OTPCode: string;
 }

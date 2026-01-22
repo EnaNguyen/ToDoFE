@@ -28,7 +28,7 @@ import { DateRange } from './to-do-store';
 @Component({
   selector: 'app-to-do',
   standalone: true,
-  imports: [HttpClientModule, ToDoCreateModal, ToDoListTable, CommonModule],
+  imports: [ ToDoCreateModal, ToDoListTable, CommonModule],
   templateUrl: './to-do.html',
   styleUrl: './to-do.scss',
   providers: [TodoStore],

@@ -1,0 +1,50 @@
+<div *ngFor="let item of toDoItems$ | async" 
+     class="border border-gray-300 rounded-lg p-4 max-w-md mx-auto mt-4 hover:shadow-md transition-shadow">
+  <div class="flex items-center justify-between mb-3">
+    <button 
+      (click)="onComplete(item)"
+      [class.bg-green-500]="item.isCompleted"
+      [class.bg-gray-300]="!item.isCompleted"
+      [class.text-black]="!item.isCompleted"
+      [class.text-white]="item.isCompleted"
+      [disabled]="item.isCompleted"
+      class="px-3 py-1 text-sm text-white rounded hover:opacity-80 transition-opacity">
+      {{ item.isCompleted ? '✓ Đã hoàn thành' : 'Hoàn thành' }}
+    </button>
+    <div class="relative">
+      <button 
+        (click)="toggleDropdown(item.id)"
+        class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+        <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+        </svg>
+      </button>
+
+      <div *ngIf="openDropdownId === item.id" 
+           class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+        <div class="py-1">
+          <button 
+            (click)="onEdit(item); closeDropdown()"
+            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">        
+            Edit
+          </button>
+          <button 
+            (click)="onDelete(item); closeDropdown()"
+            class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">           
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div [class.opacity-50]="item.isCompleted" [class.line-through]="item.isCompleted">
+    <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ item.title }}</h3>
+    <p class="text-gray-600 mb-2">{{ item.description }}</p>
+    <div class="flex items-center gap-2 text-sm text-gray-500">
+      <span>{{ item.dueDate | date:'dd/MM/yyyy HH:mm' }}</span>
+    </div>
+  </div>
+</div>
+<div *ngIf="openDropdownId !== null" 
+     (click)="closeDropdown()"
+     class="fixed inset-0 z-0"></div>
