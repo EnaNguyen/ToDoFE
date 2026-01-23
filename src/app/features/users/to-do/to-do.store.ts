@@ -24,7 +24,7 @@ const initialState: ToDoState = {
   error: null,
 };
 @Injectable()
-export class ToDoStore extends ComponentStore<ToDoState> {
+export class ToDoStoreUser extends ComponentStore<ToDoState> {
   constructor() {
     super(initialState);
   }
