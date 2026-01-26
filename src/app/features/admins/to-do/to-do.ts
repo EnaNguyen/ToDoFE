@@ -56,18 +56,20 @@ export class ToDoAdminComponent implements OnInit {
     PageIndex: new FormControl('1'),
     ItemsPerPage: new FormControl('10'),
   });
-
+  private totalPage = 1;
+  //store Observable
   readonly todos$ = this.store.toDoItems$;
   readonly loading$ = this.store.isLoading$;
   readonly error$ = this.store.error$;
   readonly numberPage$ = this.store.pageAmount$;
   readonly pageIndex$ = this.store.pageIndex$;
   readonly itemPerPage$ = this.store.itemPerPage$;
-  constructor() {
-
-  }
+  constructor() {}
   ngOnInit() {
     this.store.loadToDos();
+    this.numberPage$.subscribe((p) => {
+      if (p != null && p != undefined) this.totalPage = p;
+    });
     this.FilterSection.get('SearchInput')
       ?.valueChanges.pipe(debounceTime(300), distinctUntilChanged())
       .subscribe((value) => {
