@@ -1,13 +1,21 @@
-import { Component, inject } from '@angular/core';
-import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import {
+  ReactiveFormsModule,
+  FormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { CreateToDo } from './models/to-do.model';
 import { ToDoStoreUser } from './to-do.store';
 import { TodoStore } from '../../admins/to-do/to-do-store';
+
 @Component({
-    selector :'create-to-do-modal-user',
-    imports: [ReactiveFormsModule, CommonModule, FormsModule],
-    template: `<el-dialog>
+  selector: 'create-to-do-modal-user',
+  standalone: true,
+  imports: [ReactiveFormsModule, CommonModule, FormsModule],
+  template: `<el-dialog>
     <dialog
       id="createModal"
       aria-labelledby="dialog-title"
@@ -84,5 +92,29 @@ import { TodoStore } from '../../admins/to-do/to-do-store';
         </el-dialog-panel>
       </div>
     </dialog>
-  </el-dialog>`
-})     
+  </el-dialog>`,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+})
+export class ToDoCreateModalUser {
+  ToDoCreateForm!: FormGroup;
+  minDateToday: string = '';
+  private readonly toDoStore = inject(TodoStore);
+  constructor(private fb: FormBuilder) {
+    this.ToDoCreateForm = this.fb.group({
+      title: ['', Validators.required],
+      description: ['', Validators.required],
+      dueDate: ['', Validators.required],
+    });
+  }
+  onSubmit() {
+    if (this.ToDoCreateForm.valid) {
+      const newToDo: CreateToDo = {
+        userId: 1,
+        title: this.ToDoCreateForm.value.title,
+        description: this.ToDoCreateForm.value.description,
+        dueDate: this.ToDoCreateForm.value.dueDate,
+      };
+      this.toDoStore.createToDo(newToDo);
+    }
+  }
+}

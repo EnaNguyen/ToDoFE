@@ -25,6 +25,7 @@ import { ToDoListTable } from './to-do-list';
 import {} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DateRange } from './to-do-store';
+import { SelectionFilter } from './models/to-do.model';
 @Component({
   selector: 'app-to-do',
   standalone: true,
@@ -55,7 +56,7 @@ export class ToDoAdminComponent implements OnInit {
             distinctUntilChanged(),
             debounceTime(300),
           )
-          .subscribe((query) => this.store.searchToDo(query));
+          .subscribe((query) => this.store.filterSearchQueue(query));
 
         this.destroyRef.onDestroy(() => subSearch.unsubscribe());
       } else {
@@ -66,11 +67,12 @@ export class ToDoAdminComponent implements OnInit {
         const subStatus = fromEvent(this.statusInput.nativeElement, 'change')
           .pipe(map(() => this.statusInput.nativeElement.value))
           .subscribe((value) => {
-            let filterValue: boolean | null = null;
-
-            if (value === '1') filterValue = true;
-            else if (value === '-1') filterValue = false;
-            this.store.filterStatus(filterValue);
+            let filterValue: string| '';
+            filterValue = '';
+            if (value === '1') filterValue = "true";
+            else if (value === '-1') filterValue = "false";
+                let FilterOption: SelectionFilter = { value: filterValue, target: 'isCompleted' };
+            this.store.filterSelectionQueue(FilterOption);
           });
         this.destroyRef.onDestroy(() => subStatus.unsubscribe());
       } else {
@@ -97,7 +99,7 @@ export class ToDoAdminComponent implements OnInit {
           } as DateRange)),
         );
         const subDueDate = dateRange$.subscribe(range => {
-          this.store.filterDateRange(range);
+          this.store.filterDateRangeQueue(range);
         })
         this.destroyRef.onDestroy(()=>subDueDate.unsubscribe());
       }

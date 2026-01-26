@@ -5,10 +5,11 @@ import { TodoItem } from '../../admins/to-do/to-do-store';
 import { ToDoStoreUser } from './to-do.store';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { TodoStore } from '../../admins/to-do/to-do-store';
+import { ToDoCreateModalUser } from './to-do.create';
 @Injectable()
 @Component({
   selector: 'app-to-do',
-  imports: [CommonModule],
+  imports: [CommonModule, ToDoCreateModalUser],
   templateUrl: './to-do.html',
   styleUrl: './to-do.scss',
   providers: [ToDoStoreUser, TodoStore],
