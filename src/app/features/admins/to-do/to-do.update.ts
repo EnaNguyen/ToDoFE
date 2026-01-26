@@ -16,7 +16,7 @@ import {
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { UpdateToDo } from './models/to-do.model';
-import { TodoItem, TodoStore } from './to-do-store';
+import { TodoItem, TodoStore } from './to-do.store';
 @Component({
   selector: 'update-to-do-modal',
   standalone: true,

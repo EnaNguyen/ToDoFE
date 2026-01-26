@@ -1,8 +1,8 @@
 import { Component, Injectable, CUSTOM_ELEMENTS_SCHEMA, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TodoItem } from '../to-do/to-do-store';
-import { TodoStore } from '../to-do/to-do-store';
-import { ToDoUpdateModal } from './to-do-update';
+import { TodoItem } from './to-do.store';
+import { TodoStore } from './to-do.store';
+import { ToDoUpdateModal } from './to-do.update';
 @Component({
   selector: 'list-to-do',
   standalone: true,

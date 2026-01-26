@@ -25,18 +25,24 @@ export interface TodoState {
   isLoading: boolean;
   filter: ToDoFilter | null;
   error: string | null;
-  itemsPerPage: number;
-  pageIndex: number;
+  itemsPerPage?: number;
+  maxPage?: number;
 }
 
 const initialState: TodoState = {
   toDoItems: [],
   allToDoItems: [],
   isLoading: false,
-  filter: null,
+  filter: {
+    searchInput: '',
+    pagination: {
+      indexPage: 1,
+      itemsPerPage: 10,
+    },
+  },
   error: null,
   itemsPerPage: 10,
-  pageIndex: 1,
+  maxPage: 1,
 };
 @Injectable()
 export class TodoStore extends ComponentStore<TodoState> {
@@ -51,13 +57,22 @@ export class TodoStore extends ComponentStore<TodoState> {
   readonly isLoading$: Observable<boolean> = this.select((state) => state.isLoading);
   readonly error$: Observable<string | null> = this.select((state) => state.error);
   readonly queue$: Observable<ToDoFilter | null> = this.select((state) => state.filter);
-  readonly setToDos = this.updater((state, toDoItems: TodoItem[]) => ({
-    ...state,
-    toDoItems,
-    allToDoItems: toDoItems,
-    isLoading: false,
-    error: null,
-  }));
+  readonly pageAmount$ : Observable<number| null> = this.select((state) => state.maxPage!);
+  readonly pageIndex$ : Observable<number | null> = this.select((state) =>state.filter?.pagination?.indexPage!)
+  readonly itemPerPage$: Observable<number | null> = this.select((state) => state.itemsPerPage!)
+  readonly setToDos = this.updater((state, toDoItems: TodoItem[]) => {
+    let itemPP = state.itemsPerPage ? state.itemsPerPage : 10;
+    let Pages = Math.ceil(state.toDoItems.length / itemPP);
+    return {
+      ...state,
+      toDoItems,
+      allToDoItems: toDoItems,
+      isLoading: false,
+      error: null,
+      itemsPerPage: itemPP,
+      maxPage: Pages
+    };
+  });
   readonly addToDo = this.updater((state, newToDo: TodoItem) => ({
     ...state,
     toDoItems: [...state.toDoItems, newToDo],
@@ -93,7 +108,36 @@ export class TodoStore extends ComponentStore<TodoState> {
     isLoading: false,
     error,
   }));
-
+  readonly itemPerPageUpdate = this.updater<number>((state, itemsPerPageVariable: number) => {
+    console.log('Updater called with: ' + itemsPerPageVariable);
+    return {
+      ...state,
+      filter: {
+        ...state.filter,
+        searchInput: state.filter?.searchInput || '',
+        pagination: {
+          ...state.filter?.pagination,
+          itemsPerPage: itemsPerPageVariable,
+        },
+      },
+      itemsPerPage: itemsPerPageVariable
+    };
+  });
+  readonly setPageIndex = this.updater((state, newPage: number) => {
+  if (!state.filter) {
+    return state; 
+  }
+  return {
+    ...state,
+    filter: {
+      ...state.filter,
+      pagination: {
+        ...state.filter.pagination,
+        indexPage: newPage,
+      },
+    },
+  };
+});
   readonly filterSearchQueue = this.updater<string>((state, query$) => {
     console.log('Filtering with query:', query$);
     const test = {
@@ -121,13 +165,13 @@ export class TodoStore extends ComponentStore<TodoState> {
     if (dateRange.minDate && dateRange.maxDate) {
       if (state.filter?.rangeFilters) {
         const updatedRanges = state.filter.rangeFilters.map((range) => {
-          if (range.target === 'dueDate') {
+          if (range.target === 'DueDate') {
             return {
               ...range,
               start: beginDate,
               end: endDate,
               whichType: 'date',
-              target: 'dueDate',
+              target: 'DueDate',
             };
           }
           return range;
@@ -148,7 +192,7 @@ export class TodoStore extends ComponentStore<TodoState> {
             searchInput: state.filter?.searchInput || '',
             rangeFilters: [
               {
-                target: 'dueDate',
+                target: 'DueDate',
                 start: beginDate,
                 end: endDate,
                 whichType: 'date',

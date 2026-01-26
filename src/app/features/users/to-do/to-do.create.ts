@@ -9,7 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { CreateToDo } from './models/to-do.model';
 import { ToDoStoreUser } from './to-do.store';
-import { TodoStore } from '../../admins/to-do/to-do-store';
+import { TodoStore } from '../../admins/to-do/to-do.store';
 
 @Component({
   selector: 'create-to-do-modal-user',

@@ -1,10 +1,10 @@
 import { Component, inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { AuthServices } from '../../../services/AuthServices';
 import { Router } from '@angular/router';
-import { TodoItem } from '../../admins/to-do/to-do-store';
+import { TodoItem } from '../../admins/to-do/to-do.store';
 import { ToDoStoreUser } from './to-do.store';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { TodoStore } from '../../admins/to-do/to-do-store';
+import { TodoStore } from '../../admins/to-do/to-do.store';
 import { ToDoCreateModalUser } from './to-do.create';
 @Injectable()
 @Component({

@@ -62,7 +62,7 @@ export interface ToDoFilter
     comboboxes?: Combobox[],
     selections?: SelectionFilter[],
     pagination?: {
-        value: 1,
-        itemsPerPage: 10
+        indexPage?: number,
+        itemsPerPage?: number
     }
 }

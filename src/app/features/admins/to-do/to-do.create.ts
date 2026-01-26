@@ -8,7 +8,7 @@ import {
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { CreateToDo } from './models/to-do.model';
-import { TodoStore } from './to-do-store';
+import { TodoStore } from './to-do.store';
 @Component({
   selector: 'create-to-do-modal',
   standalone: true,
@@ -44,7 +44,7 @@ import { TodoStore } from './to-do-store';
                         type="text"
                         class="max-w-[400px] bg-white focus:bg-grey-100 focus:shadown-xl p-2 pl-4"
                         id="title"
-                        formControlName="title"
+                        formControlName="title"                                    
                       />
                       <p>Description</p>
                       <input
@@ -136,5 +136,9 @@ export class ToDoCreateModal {
   }
   get f() {
     return this.ToDoCreateForm.controls;
+  }
+
+  for() {
+    this.ToDoCreateForm.controls['title'].value;
   }
 }

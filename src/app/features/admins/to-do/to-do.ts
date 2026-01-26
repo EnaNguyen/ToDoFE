@@ -17,19 +17,27 @@ import {
   map,
   debounceTime,
   merge,
-  Subscription,
+  combineLatest,
 } from 'rxjs';
-import { TodoStore } from './to-do-store';
+import { TodoStore } from './to-do.store';
 import { ToDoCreateModal } from './to-do.create';
-import { ToDoListTable } from './to-do-list';
+import { ToDoListTable } from './to-do.list';
 import {} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DateRange } from './to-do-store';
+import { DateRange } from './to-do.store';
 import { SelectionFilter } from './models/to-do.model';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  FormControl,
+} from '@angular/forms';
+import { ɵEmptyOutletComponent } from '@angular/router';
 @Component({
   selector: 'app-to-do',
   standalone: true,
-  imports: [ ToDoCreateModal, ToDoListTable, CommonModule],
+  imports: [ToDoCreateModal, ToDoListTable, CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './to-do.html',
   styleUrl: './to-do.scss',
   providers: [TodoStore],
@@ -38,74 +46,54 @@ import { SelectionFilter } from './models/to-do.model';
 export class ToDoAdminComponent implements OnInit {
   private readonly store = inject(TodoStore);
   private readonly destroyRef = inject(DestroyRef);
+  FilterSection = new FormGroup({
+    SearchInput: new FormControl(''),
+    StatusInput: new FormControl('0'),
+    MinDateInput: new FormControl(''),
+    MaxDateInput: new FormControl(''),
+    PreviousPage: new FormControl(''),
+    NextPage: new FormControl(''),
+    PageIndex: new FormControl('1'),
+    ItemsPerPage: new FormControl('10'),
+  });
 
-  @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('statusToDo') statusInput!: ElementRef<HTMLSelectElement>;
-  @ViewChild('minDateInput') minDateInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('maxDateInput') maxDateInput!: ElementRef<HTMLInputElement>;
   readonly todos$ = this.store.toDoItems$;
   readonly loading$ = this.store.isLoading$;
   readonly error$ = this.store.error$;
-
+  readonly numberPage$ = this.store.pageAmount$;
+  readonly pageIndex$ = this.store.pageIndex$;
+  readonly itemPerPage$ = this.store.itemPerPage$;
   constructor() {
-    afterNextRender(() => {
-      if (this.searchInput?.nativeElement) {
-        const subSearch = fromEvent(this.searchInput.nativeElement, 'input')
-          .pipe(
-            map((e: Event) => (e.target as HTMLInputElement).value.trim()),
-            distinctUntilChanged(),
-            debounceTime(300),
-          )
-          .subscribe((query) => this.store.filterSearchQueue(query));
 
-        this.destroyRef.onDestroy(() => subSearch.unsubscribe());
-      } else {
-        console.warn('Không tìm thấy #searchInput');
-        return;
-      }
-      if (this.statusInput?.nativeElement) {
-        const subStatus = fromEvent(this.statusInput.nativeElement, 'change')
-          .pipe(map(() => this.statusInput.nativeElement.value))
-          .subscribe((value) => {
-            let filterValue: string| '';
-            filterValue = '';
-            if (value === '1') filterValue = "true";
-            else if (value === '-1') filterValue = "false";
-                let FilterOption: SelectionFilter = { value: filterValue, target: 'isCompleted' };
-            this.store.filterSelectionQueue(FilterOption);
-          });
-        this.destroyRef.onDestroy(() => subStatus.unsubscribe());
-      } else {
-        console.warn('Không tìm thấy #statusInput');
-        return;
-      }
-      if (!this.minDateInput || !this.maxDateInput) {
-        console.warn('Không tìm thấy #statusInput');
-        return;
-      } else {
-        const minDate$ = fromEvent(this.minDateInput.nativeElement, 'change').pipe(
-          map(() => this.minDateInput.nativeElement.value as string),
-          distinctUntilChanged(),
-        );
-        const maxDate$ = fromEvent(this.maxDateInput.nativeElement, 'change').pipe(
-          map(() => this.maxDateInput.nativeElement.value as string),
-          distinctUntilChanged(),
-        );
-        const dateRange$ = merge(minDate$, maxDate$).pipe(
-          debounceTime(300),
-          map(() => ({
-            minDate: this.minDateInput.nativeElement.value || '',
-            maxDate: this.maxDateInput.nativeElement.value || '',
-          } as DateRange)),
-        );
-        const subDueDate = dateRange$.subscribe(range => {
-          this.store.filterDateRangeQueue(range);
-        })
-        this.destroyRef.onDestroy(()=>subDueDate.unsubscribe());
-      }
-    });
   }
   ngOnInit() {
     this.store.loadToDos();
+    this.FilterSection.get('SearchInput')
+      ?.valueChanges.pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe((value) => {
+        this.store.filterSearchQueue(value || '');
+      });
+    this.FilterSection.get('StatusInput')
+      ?.valueChanges.pipe(distinctUntilChanged())
+      .subscribe((value) => {
+        this.store.filterSelectionQueue({ value: value || '', target: 'isCompleted' });
+      });
+    combineLatest([
+      this.FilterSection.get('MinDateInput')!.valueChanges,
+      this.FilterSection.get('MaxDateInput')!.valueChanges,
+    ])
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe(([minDate, maxDate]) => {
+        this.store.filterDateRangeQueue({
+          minDate: minDate || '',
+          maxDate: maxDate || '',
+        });
+      });
+    this.FilterSection.get('ItemsPerPage')
+      ?.valueChanges.pipe(distinctUntilChanged())
+      .subscribe((value) => {
+        console.log('ItemsPerPage changed: ' + value);
+        this.store.itemPerPageUpdate(parseInt(value || '10'));
+      });
   }
 }
