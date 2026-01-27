@@ -18,6 +18,7 @@ import {
   debounceTime,
   merge,
   combineLatest,
+  take,
 } from 'rxjs';
 import { TodoStore } from './to-do.store';
 import { ToDoCreateModal } from './to-do.create';
@@ -37,7 +38,7 @@ import { ɵEmptyOutletComponent } from '@angular/router';
 @Component({
   selector: 'app-to-do',
   standalone: true,
-  imports: [ToDoCreateModal, ToDoListTable, CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [ToDoCreateModal, ToDoListTable, CommonModule, FormsModule, ReactiveFormsModule, ɵEmptyOutletComponent],
   templateUrl: './to-do.html',
   styleUrl: './to-do.scss',
   providers: [TodoStore],
@@ -56,20 +57,51 @@ export class ToDoAdminComponent implements OnInit {
     PageIndex: new FormControl('1'),
     ItemsPerPage: new FormControl('10'),
   });
-  private totalPage = 1;
   //store Observable
   readonly todos$ = this.store.toDoItems$;
+  readonly itemInPage$ = this.store.select((state) => state.itemInPage);
   readonly loading$ = this.store.isLoading$;
   readonly error$ = this.store.error$;
-  readonly numberPage$ = this.store.pageAmount$;
   readonly pageIndex$ = this.store.pageIndex$;
   readonly itemPerPage$ = this.store.itemPerPage$;
+  readonly totalPages$ = this.store.totalPages$;
+  
+  readonly pageNumbers$ = combineLatest([
+    this.pageIndex$,
+    this.totalPages$
+  ]).pipe(
+    map(([currentPage, totalPages]) => {
+      const pages = [];
+      const maxPageLinks = 5;
+      
+      if (!totalPages) totalPages = 1;
+      
+      if (totalPages <= maxPageLinks) {
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        if (currentPage! > 3) pages.push(0);
+        
+        const start = Math.max(2, currentPage! - 1);
+        const end = Math.min(totalPages - 1, currentPage! + 1);
+        
+        for (let i = start; i <= end; i++) {
+          if (!pages.includes(i)) pages.push(i);
+        }
+        
+        if (currentPage! < totalPages - 2) pages.push(0); 
+        if (!pages.includes(totalPages)) pages.push(totalPages);
+      }
+      
+      return pages;
+    })
+  );
+  
   constructor() {}
   ngOnInit() {
     this.store.loadToDos();
-    this.numberPage$.subscribe((p) => {
-      if (p != null && p != undefined) this.totalPage = p;
-    });
     this.FilterSection.get('SearchInput')
       ?.valueChanges.pipe(debounceTime(300), distinctUntilChanged())
       .subscribe((value) => {
@@ -97,5 +129,30 @@ export class ToDoAdminComponent implements OnInit {
         console.log('ItemsPerPage changed: ' + value);
         this.store.itemPerPageUpdate(parseInt(value || '10'));
       });
+  }
+  
+  goToPage(page: number) {
+    if (page !== 0) {
+      this.store.setPageIndex(page);
+    }
+  }
+  
+  previousPage() {
+    this.pageIndex$.pipe(take(1)).subscribe((currentPage) => {
+      if (currentPage && currentPage > 1) {
+        this.store.setPageIndex(currentPage - 1);
+      }
+    });
+  }
+  
+  nextPage() {
+    combineLatest([
+      this.pageIndex$,
+      this.totalPages$
+    ]).pipe(take(1)).subscribe(([currentPage, totalPages]) => {
+      if (currentPage && totalPages && currentPage < totalPages) {
+        this.store.setPageIndex(currentPage + 1);
+      }
+    });
   }
 }

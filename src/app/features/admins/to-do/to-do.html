@@ -7,105 +7,106 @@
 </button>
 <create-to-do-modal />
 <list-to-do
-  [toDoItems]="(todos$ | async) || []"
+  [toDoItems]="(itemInPage$ | async) || []"
   [isLoading]="(loading$ | async) ?? false"
 ></list-to-do>
-<form [formGroup]="FilterSection" class="flex items-center gap-4 mb-4">
-  <input type="text" placeholder="Enter title / description" formControlName="SearchInput" />
-  <select #statusToDo formControlName="StatusInput">
-    <option value="0">All</option>
-    <option value="1">Done</option>
-    <option value="-1">UnDone</option>
-  </select>
-  <input #minDateInput type="date" formControlName="MinDateInput" />
-  <input #maxDateInput type="date" formControlName="MaxDateInput" />
+<form [formGroup]="FilterSection" class="flex flex-col gap-4 mb-4">
+  <div class="flex items-center gap-4">
+    <input type="text" placeholder="Enter title / description" formControlName="SearchInput" />
+    <select #statusToDo formControlName="StatusInput">
+      <option value="0">All</option>
+      <option value="1">Done</option>
+      <option value="-1">UnDone</option>
+    </select>
+    <input #minDateInput type="date" formControlName="MinDateInput" />
+    <input #maxDateInput type="date" formControlName="MaxDateInput" />
 
-  <p>To Do Per Page</p>
-  <select formControlName="ItemsPerPage">
-    <option value="5">5</option>
-    <option value="10">10</option>
-    <option value="20">20</option>
-    <option value="50">50</option>
-  </select>
-  <div
-    class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
-  >
     <div>
-      <nav aria-label="Pagination" class="isolate inline-flex -space-x-px rounded-md shadow-xs">
-        <a
-          href="#"
-          class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 inset-ring inset-ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-        >
-          <span class="sr-only">Previous</span>
-          <svg
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            data-slot="icon"
-            aria-hidden="true"
-            class="size-5"
-          >
-            <path
-              d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
-              clip-rule="evenodd"
-              fill-rule="evenodd"
-            />
-          </svg>
-        </a>
-        <a
-          href="#"
-          aria-current="page"
-          class="relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >1</a
-        >
-        <a
-          href="#"
-          class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 inset-ring inset-ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-          >2</a
-        >
-        <a
-          href="#"
-          class="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 inset-ring inset-ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 md:inline-flex"
-          >3</a
-        >
-        <span
-          class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 inset-ring inset-ring-gray-300 focus:outline-offset-0"
-          >...</span
-        >
-        <a
-          href="#"
-          class="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 inset-ring inset-ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 md:inline-flex"
-          >8</a
-        >
-        <a
-          href="#"
-          class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 inset-ring inset-ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-          >9</a
-        >
-        <a
-          href="#"
-          class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 inset-ring inset-ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-          >10</a
-        >
-        <a
-          href="#"
-          class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 inset-ring inset-ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-        >
-          <span class="sr-only">Next</span>
-          <svg
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            data-slot="icon"
-            aria-hidden="true"
-            class="size-5"
-          >
-            <path
-              d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
-              clip-rule="evenodd"
-              fill-rule="evenodd"
-            />
-          </svg>
-        </a>
-      </nav>
+      <label class="text-sm font-medium">Items Per Page</label>
+      <select formControlName="ItemsPerPage" class="ml-2">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+      </select>
     </div>
+  </div>
+  <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3">
+    <div class="text-sm text-gray-700">
+      Page <span class="font-semibold">{{ pageIndex$ | async }}</span> of
+      <span class="font-semibold">{{ totalPages$ | async }}</span> | Showing:
+
+        <ng-container *ngIf="pageIndex$ | async as pageIndex">
+          <ng-container *ngIf="itemPerPage$ | async as itemPerPage">
+            <ng-container *ngIf="todos$ | async as todos">
+              @if(itemPerPage*(pageIndex)  > todos.length )
+              {
+                  {{itemPerPage*(pageIndex-1)+1}} - {{todos.length}} / {{todos.length}} Item(s)
+              }
+              @else {
+                  {{itemPerPage*(pageIndex-1)+1}} - {{(itemPerPage*(pageIndex))}} / {{todos.length}} Item(s)
+              }
+            </ng-container>
+          </ng-container>
+        </ng-container>
+    </div>
+    <nav aria-label="Pagination" class="isolate inline-flex -space-x-px rounded-md shadow-xs">
+      <button
+        (click)="previousPage()"
+        [disabled]="(pageIndex$ | async) === 1"
+        class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span class="sr-only">Previous</span>
+        <svg
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          data-slot="icon"
+          aria-hidden="true"
+          class="size-5"
+        >
+          <path
+            d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
+            clip-rule="evenodd"
+            fill-rule="evenodd"
+          />
+        </svg>
+      </button>
+
+      <ng-container *ngIf="pageNumbers$ | async as pages">
+        <button
+          *ngFor="let page of pages"
+          (click)="goToPage(page)"
+          [attr.aria-current]="(pageIndex$ | async) === page ? 'page' : null"
+          [ngClass]="
+            (pageIndex$ | async) === page
+              ? 'relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+              : 'relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+          "
+        >
+          {{ page }}
+        </button>
+      </ng-container>
+
+      <button
+        (click)="nextPage()"
+        [disabled]="(pageIndex$ | async) === (totalPages$ | async)"
+        class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span class="sr-only">Next</span>
+        <svg
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          data-slot="icon"
+          aria-hidden="true"
+          class="size-5"
+        >
+          <path
+            d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
+            clip-rule="evenodd"
+            fill-rule="evenodd"
+          />
+        </svg>
+      </button>
+    </nav>
   </div>
 </form>

@@ -21,9 +21,18 @@ export interface UpdateToDo{
     dueDate: string
     id: number
 }
-
-
-
+export interface ToDoResponse 
+{
+    toDoItems: ToDoView[]
+    itemInPage: ToDoView [],
+    totalItems: number,
+    totalPages: number,
+    toTalPages?: number,
+    itemsPerPage: number,
+    itemPerPage?: number,
+    pageIndex: number,
+    currentPage: number
+}
 
 //Filter
 export interface SortOptions
@@ -61,8 +70,6 @@ export interface ToDoFilter
     rangeFilters?: RangeFilter[],
     comboboxes?: Combobox[],
     selections?: SelectionFilter[],
-    pagination?: {
-        indexPage?: number,
-        itemsPerPage?: number
-    }
+    itemPerPage?: number,
+    pageIndex?: number,
 }

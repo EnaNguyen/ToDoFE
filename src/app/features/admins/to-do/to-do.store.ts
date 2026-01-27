@@ -1,10 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
-import { Observable, range, of, debounceTime, distinctUntilChanged, filter } from 'rxjs';
+import { Observable, range, of, debounceTime, distinctUntilChanged, filter, Subject } from 'rxjs';
 import { map, tap, switchMap, catchError } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import { CreateToDo, SelectionFilter, ToDoFilter, UpdateToDo } from './models/to-do.model';
+import {
+  CreateToDo,
+  SelectionFilter,
+  ToDoFilter,
+  ToDoResponse,
+  UpdateToDo,
+} from './models/to-do.model';
 import { formatDate, compareDates } from '../../../shared/utils/date.utils';
 export interface TodoItem {
   id: number;
@@ -26,7 +32,9 @@ export interface TodoState {
   filter: ToDoFilter | null;
   error: string | null;
   itemsPerPage?: number;
-  maxPage?: number;
+  pageIndex?: number;
+  itemInPage: TodoItem[];
+  totalPages?: number;
 }
 
 const initialState: TodoState = {
@@ -35,42 +43,69 @@ const initialState: TodoState = {
   isLoading: false,
   filter: {
     searchInput: '',
-    pagination: {
-      indexPage: 1,
-      itemsPerPage: 10,
-    },
   },
   error: null,
-  itemsPerPage: 10,
-  maxPage: 1,
+  itemsPerPage: 5,
+  pageIndex: 1,
+  itemInPage: [],
+  totalPages: 1,
 };
 @Injectable()
 export class TodoStore extends ComponentStore<TodoState> {
+  private filterTrigger$ = new Subject<ToDoFilter>();
+
   constructor() {
     super(initialState);
-    this.autoFetchOnFilterChange(
-      this.queue$.pipe(filter((f) => f !== null)) as Observable<ToDoFilter>,
-    );
+    this.setupFilterChangeListener();
   }
+
+  private readonly setupFilterChangeListener = () => {
+    this.filterTrigger$
+      .pipe(
+        debounceTime(350),
+        distinctUntilChanged((prev, curr) => JSON.stringify(prev) === JSON.stringify(curr)),
+        tap((filter) => {
+          console.log('Filter changed, fetching:', filter);
+          this.filterServer(filter);
+        }),
+      )
+      .subscribe();
+  };
   private readonly http = inject(HttpClient);
   readonly toDoItems$: Observable<TodoItem[]> = this.select((state) => state.toDoItems);
   readonly isLoading$: Observable<boolean> = this.select((state) => state.isLoading);
   readonly error$: Observable<string | null> = this.select((state) => state.error);
   readonly queue$: Observable<ToDoFilter | null> = this.select((state) => state.filter);
-  readonly pageAmount$ : Observable<number| null> = this.select((state) => state.maxPage!);
-  readonly pageIndex$ : Observable<number | null> = this.select((state) =>state.filter?.pagination?.indexPage!)
-  readonly itemPerPage$: Observable<number | null> = this.select((state) => state.itemsPerPage!)
+  readonly pageIndex$: Observable<number | null> = this.select((state) => state.pageIndex!);
+  readonly itemPerPage$: Observable<number | null> = this.select((state) => state.itemsPerPage!);
+  readonly totalPages$: Observable<number | null> = this.select((state) => state.totalPages!);
   readonly setToDos = this.updater((state, toDoItems: TodoItem[]) => {
-    let itemPP = state.itemsPerPage ? state.itemsPerPage : 10;
-    let Pages = Math.ceil(state.toDoItems.length / itemPP);
+    const newFilter: ToDoFilter = {
+      ...state.filter,
+      searchInput: state.filter?.searchInput || '',
+      itemPerPage: 10,
+      pageIndex: 1,
+    };
+    this.filterTrigger$.next(newFilter);
     return {
       ...state,
       toDoItems,
       allToDoItems: toDoItems,
       isLoading: false,
       error: null,
-      itemsPerPage: itemPP,
-      maxPage: Pages
+    };
+  });
+  readonly paginationToDos = this.updater((state, response: ToDoResponse) => {
+    return {
+      ...state,
+      toDoItems: response.toDoItems,
+      allToDoItems: response.toDoItems,
+      isLoading: false,
+      error: null,
+      itemsPerPage: response.itemsPerPage || response.itemPerPage || 10,
+      pageIndex: response.pageIndex || response.currentPage + 1 || 1,
+      totalPages: response.totalPages || response.toTalPages || 1,
+      itemInPage: response.itemInPage,
     };
   });
   readonly addToDo = this.updater((state, newToDo: TodoItem) => ({
@@ -109,45 +144,49 @@ export class TodoStore extends ComponentStore<TodoState> {
     error,
   }));
   readonly itemPerPageUpdate = this.updater<number>((state, itemsPerPageVariable: number) => {
-    console.log('Updater called with: ' + itemsPerPageVariable);
+    console.log('Updater called with:', itemsPerPageVariable);
+    const newFilter: ToDoFilter = {
+      ...state.filter,
+      searchInput: state.filter?.searchInput || '',
+      itemPerPage: itemsPerPageVariable,
+      pageIndex: 1,
+    };
+    this.filterTrigger$.next(newFilter);
     return {
       ...state,
-      filter: {
-        ...state.filter,
-        searchInput: state.filter?.searchInput || '',
-        pagination: {
-          ...state.filter?.pagination,
-          itemsPerPage: itemsPerPageVariable,
-        },
-      },
-      itemsPerPage: itemsPerPageVariable
+      itemsPerPage: itemsPerPageVariable,
+      filter: newFilter,
+      pageIndex: 1,
     };
   });
   readonly setPageIndex = this.updater((state, newPage: number) => {
-  if (!state.filter) {
-    return state; 
-  }
-  return {
-    ...state,
-    filter: {
+    if (!state.filter) {
+      return state;
+    }
+    const newFilter: ToDoFilter = {
       ...state.filter,
-      pagination: {
-        ...state.filter.pagination,
-        indexPage: newPage,
-      },
-    },
-  };
-});
+      pageIndex: newPage,
+    };
+    this.filterTrigger$.next(newFilter);
+    return {
+      ...state,
+      pageIndex: newPage,
+      filter: newFilter,
+    };
+  });
   readonly filterSearchQueue = this.updater<string>((state, query$) => {
     console.log('Filtering with query:', query$);
+    const newFilter = {
+      ...state.filter,
+      searchInput: query$,
+    };
+    this.filterTrigger$.next(newFilter as ToDoFilter);
     const test = {
       ...state,
       toDoItems: state.allToDoItems,
       isLoading: false,
       error: null,
-      filter: {
-        searchInput: query$,
-      },
+      filter: newFilter,
     };
     console.log(test);
     return test;
@@ -162,6 +201,9 @@ export class TodoStore extends ComponentStore<TodoState> {
     if (dateRange.maxDate) {
       endDate = formatDate(dateRange.maxDate);
     }
+
+    let newFilter = { ...state.filter } as ToDoFilter;
+
     if (dateRange.minDate && dateRange.maxDate) {
       if (state.filter?.rangeFilters) {
         const updatedRanges = state.filter.rangeFilters.map((range) => {
@@ -176,31 +218,30 @@ export class TodoStore extends ComponentStore<TodoState> {
           }
           return range;
         });
-        return {
-          ...state,
-          filter: {
-            ...state.filter,
-            searchInput: state.filter.searchInput,
-            rangeFilters: updatedRanges,
-          },
+        newFilter = {
+          ...state.filter,
+          searchInput: state.filter.searchInput,
+          rangeFilters: updatedRanges,
         };
       } else {
-        return {
-          ...state,
-          filter: {
-            ...state.filter,
-            searchInput: state.filter?.searchInput || '',
-            rangeFilters: [
-              {
-                target: 'DueDate',
-                start: beginDate,
-                end: endDate,
-                whichType: 'date',
-              },
-            ],
-          },
+        newFilter = {
+          ...state.filter,
+          searchInput: state.filter?.searchInput || '',
+          rangeFilters: [
+            {
+              target: 'DueDate',
+              start: beginDate,
+              end: endDate,
+              whichType: 'date',
+            },
+          ],
         };
       }
+      this.filterTrigger$.next(newFilter);
+      return {
+        ...state,
+        filter: newFilter,
+      };
     }
     return state;
   });
@@ -227,6 +268,8 @@ export class TodoStore extends ComponentStore<TodoState> {
   });
   readonly filterSelectionQueue = this.updater((state, selection: SelectionFilter) => {
     console.log('Selection Filter:', selection);
+    let newFilter = { ...state.filter } as ToDoFilter;
+
     if (state.filter?.selections) {
       const updatedSelections = state.filter.selections.map((sel) => {
         if (sel.target === selection.target) {
@@ -234,44 +277,33 @@ export class TodoStore extends ComponentStore<TodoState> {
         }
         return sel;
       });
-      return {
-        ...state,
-        filter: {
-          ...state.filter,
-          searchInput: state.filter?.searchInput || '',
-          selections: updatedSelections,
-        },
+      newFilter = {
+        ...state.filter,
+        searchInput: state.filter?.searchInput || '',
+        selections: updatedSelections,
       };
     } else {
-      return {
-        ...state,
-        filter: {
-          ...state.filter,
-          searchInput: state.filter?.searchInput || '',
-          selections: [selection],
-        },
+      newFilter = {
+        ...state.filter,
+        searchInput: state.filter?.searchInput || '',
+        selections: [selection],
       };
     }
+    this.filterTrigger$.next(newFilter);
+    return {
+      ...state,
+      filter: newFilter,
+    };
   });
-  readonly autoFetchOnFilterChange = this.effect<ToDoFilter>((filter$) =>
-    filter$.pipe(
-      debounceTime(350),
-      distinctUntilChanged((prev, curr) => JSON.stringify(prev) === JSON.stringify(curr)),
-      tap((filter) => {
-        console.log('Auto fetching with filter:', filter);
-        this.filterServer(filter);
-      }),
-    ),
-  );
   readonly filterServer = this.effect<ToDoFilter>((filter$) =>
     filter$.pipe(
       tap(() => this.patchState({ isLoading: true, error: null })),
 
       switchMap((filter: ToDoFilter) =>
-        this.http.post<TodoItem[]>(`${environment.apiUrl}/todo/filter`, filter).pipe(
+        this.http.post<ToDoResponse>(`${environment.apiUrl}/todo/filter`, filter).pipe(
           tap((items) => {
             console.log('Filtered todos:', items);
-            this.setToDos(items);
+            this.paginationToDos(items);
           }),
           tap(() => this.patchState({ isLoading: false })),
           catchError((err) => {
@@ -389,63 +421,4 @@ export class TodoStore extends ComponentStore<TodoState> {
       ),
     ),
   );
-
-  // readonly searchToDo = this.updater((state, queue: string) => {
-  //   const lowerQueue = queue.toLowerCase().trim();
-  //   return {
-  //     ...state,
-  //     toDoItems: state.allToDoItems.filter(
-  //       (item) =>
-  //         item.title.toLowerCase().includes(lowerQueue) ||
-  //         item.description.toLowerCase().includes(lowerQueue),
-  //     ),
-  //     isLoading: false,
-  //     error: null,
-  //   };
-  // });
-  // readonly filterStatus = this.updater((state, stat: boolean | null) => {
-  //   if (stat) {
-  //     console.log('testing' + stat);
-  //     return {
-  //       ...state,
-  //       toDoItems: state.allToDoItems.filter((item) => item.isCompleted == stat),
-  //       isLoading: false,
-  //       error: null,
-  //     };
-  //   }
-  //   console.log('Null testing');
-  //   return {
-  //     ...state,
-  //     toDoItems: state.allToDoItems,
-  //     isLoading: false,
-  //     error: null,
-  //   };
-  // });
-  // readonly filterDateRange = this.updater((state, dateRange: DateRange) => {
-  //   let beginDate = new Date().toString();
-  //   let endDate = new Date().toString();
-
-  //   if (dateRange.minDate) {
-  //     beginDate = formatDate(dateRange.minDate);
-  //   }
-  //   if (dateRange.maxDate) {
-  //     endDate = formatDate(dateRange.maxDate);
-  //   }
-  //   return {
-  //     ...state,
-  //     toDoItems:
-  //       dateRange.minDate && dateRange.maxDate
-  //         ? state.allToDoItems.filter((item) => {
-  //             if (!item.dueDate) return false;
-  //             const dueFormatted = formatDate(item.dueDate);
-  //             if (!dueFormatted) return false;
-  //             const isDueAfterOrEqualBegin = compareDates(dueFormatted, beginDate);
-  //             const isEndAfterOrEqualDue = compareDates(endDate, dueFormatted);
-  //             return isDueAfterOrEqualBegin && isEndAfterOrEqualDue;
-  //           })
-  //         : state.allToDoItems,
-  //     isLoading: false,
-  //     error: null,
-  //   };
-  // });
 }
